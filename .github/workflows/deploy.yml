@@ -24,13 +24,14 @@ jobs:
 
       - name: Set environment variables 
         run: |
-          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env.production
-          echo "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" >> .env.production
-          echo "CLERK_SECRET_KEY=${{ secrets.CLERK_SECRET_KEY }}" >> .env.production
-          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL=${{ secrets.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL }}" >> .env.production
-          echo "NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL=${{ secrets.NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL }}" >> .env.production
-          echo "NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}" >> .env.production
-          echo "NEXT_PUBLIC_CLOUDINARY_API_KEY=${{ secrets.NEXT_PUBLIC_CLOUDINARY_API_KEY }}" >> .env.production
+          echo DATABASE_URL="${{ secrets.DATABASE_URL }}" >> .env.production
+          echo NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}" >> .env.production
+          echo CLERK_SECRET_KEY="${{ secrets.CLERK_SECRET_KEY }}" >> .env.production
+          echo NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL="${{ secrets.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL }}" >> .env.production
+          echo NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL="${{ secrets.NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL }}" >> .env.production
+          echo NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME="${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}" >> .env.production
+          echo NEXT_PUBLIC_CLOUDINARY_API_KEY="${{ secrets.NEXT_PUBLIC_CLOUDINARY_API_KEY }}" >> .env.production
+
 
       - name: Print contents of .env.production file
         run: cat .env.production
