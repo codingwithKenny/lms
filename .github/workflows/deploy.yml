@@ -32,24 +32,22 @@ jobs:
           echo 'NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}' >> .env.production
           echo 'NEXT_PUBLIC_CLOUDINARY_API_KEY=${{ secrets.NEXT_PUBLIC_CLOUDINARY_API_KEY }}' >> .env.production
 
-
-
       - name: Print contents of .env.production file
         run: cat .env.production
 
       - name: Build Next.js app
         run: npm run build
 
-      - name: Deploy to VPS via SSH
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: 22
-          source: '.next/'
-          target: ${{ secrets.VPS_DEPLOY_PATH }}
-          strip_components: 1
+      - name: Setup SSH Key with Passphrase
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          eval "$(ssh-agent -s)"
+          echo "${{ secrets.SSH_PASSPHRASE }}" | ssh-add ~/.ssh/id_rsa
+
+      - name: Deploy via SCP
+        run: scp -r -o StrictHostKeyChecking=no .next/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:${{ secrets.VPS_DEPLOY_PATH }}
 
       - name: Run remote commands on VPS via SSH
         uses: appleboy/ssh-action@master
