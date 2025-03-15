@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Set environment variables
+      - name: Set environment variables 
         run: |
           echo 'DATABASE_URL=${{ secrets.DATABASE_URL }}' >> .env.production
           echo 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY }}' >> .env.production
@@ -37,22 +37,19 @@ jobs:
 
       - name: Build Next.js app
         run: npm run build
-
-      - name: Create deployment archive
-        run: tar --exclude='node_modules' --exclude='.git' --exclude='.github' --warning=no-file-changed -czf project.tar.gz -C . .
-
-
-      - name: Deploy project to VPS
+      
+      - name: Deploy to VPS via SSH
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
-          source: "project.tar.gz"
-          target: "/home/ubuntu"
+          source: '.'
+          target: ${{ secrets.VPS_DEPLOY_PATH }}
+          strip_components: 1
 
-      - name: Extract and restart on VPS
+      - name: Run remote commands on VPS via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.VPS_HOST }}
@@ -60,11 +57,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            cd /home/ubuntu
-            rm -rf ${{ secrets.VPS_DEPLOY_PATH }}/*
-            tar -xzf project.tar.gz -C ${{ secrets.VPS_DEPLOY_PATH }}
-            rm project.tar.gz
             cd ${{ secrets.VPS_DEPLOY_PATH }}
-            npm install --production
+            npm install --production 
             pm2 restart ${{ secrets.PM2_APP_NAME }} || pm2 start npm --name ${{ secrets.PM2_APP_NAME }} -- start
             pm2 save
