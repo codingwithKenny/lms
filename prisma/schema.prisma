@@ -1,0 +1,289 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id       String @id
+  name     String
+  email    String @unique
+  password String
+}
+
+model Teacher {
+  id           String           @id
+  surname      String
+  name         String
+  username     String           @unique
+  sex          Sex
+  email        String           @unique
+  img          String?
+  address      String?
+  phone        String?
+  password     String?
+  subjects     TeacherSubject[] // ✅ Many-to-Many relationship
+  results      Result[]
+  classes      Class[]          @relation("SupervisorRelation")
+  classRecords ClassRecord[] // ✅ Class teacher uploads remarks
+  isDeleted    Boolean          @default(false)
+  deletedAt    DateTime?
+}
+
+model Parent {
+  id        String    @id
+  name      String
+  email     String    @unique
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+}
+
+model Subject {
+  id         Int              @id @default(autoincrement())
+  name       String           @unique
+  teachers   TeacherSubject[] // ✅ Many-to-Many relationship
+  students   StudentSubject[]
+  results    Result[]
+  attendance Attendance[]
+  isDeleted  Boolean          @default(false)
+  deletedAt  DateTime?
+}
+
+model TeacherSubject {
+  teacherId String
+  subjectId Int
+  teacher   Teacher @relation(fields: [teacherId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  @@id([teacherId, subjectId]) // ✅ Many-to-Many Relationship
+}
+
+model StudentSubject {
+  studentId String
+  subjectId Int
+  student   Student @relation(fields: [studentId], references: [id])
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  @@id([studentId, subjectId]) // ✅ Many-to-Many Relationship
+}
+
+model Class {
+  id           Int              @id @default(autoincrement())
+  name         String
+  grade        Grade            @relation(fields: [gradeId], references: [id])
+  gradeId      Int
+  supervisor   Teacher?         @relation("SupervisorRelation", fields: [supervisorId], references: [id])
+  supervisorId String?
+  students     Student[]
+  results      Result[]
+  classRecords ClassRecord[]
+  histories    StudentHistory[] // ✅ New relation to track movement across sessions// ✅ New relation for class teacher remarks
+  isDeleted    Boolean          @default(false)
+  deletedAt    DateTime?
+
+  @@unique([name, gradeId]) // ✅ Unique class names per grade
+  @@unique([supervisorId, gradeId])
+}
+
+model Grade {
+  id        Int              @id @default(autoincrement())
+  name      String
+  session   Session          @relation(fields: [sessionId], references: [id])
+  sessionId Int
+  classes   Class[]
+  students  Student[]
+  results   Result[]
+  histories StudentHistory[] // ✅ New relation to track movement across sessions
+  isDeleted Boolean          @default(false)
+  deletedAt DateTime?
+
+  @@unique([name, sessionId]) // ✅ Ensure uniqueness per session, not globally
+}
+
+model Session {
+  id             Int              @id @default(autoincrement())
+  name           String           @unique
+  isCurrent      Boolean          @default(false)
+  terms          Term[]
+  results        Result[]
+  classRecord    ClassRecord[]
+  histories      StudentHistory[]
+  paymentHistory PaymentHistory[]
+  grades         Grade[]
+  students       Student[]
+  isDeleted      Boolean          @default(false)
+  deletedAt      DateTime?
+
+  @@index([isCurrent], map: "unique_active_session") // ✅ Corrected syntax
+}
+
+model Term {
+  id             Int              @id @default(autoincrement())
+  name           String
+  session        Session          @relation(fields: [sessionId], references: [id])
+  sessionId      Int
+  students       Student[] 
+    isCurrent      Boolean   @default(false) // 
+  paymentHistory PaymentHistory[] 
+  results      Result[]
+  attendance   Attendance[]
+  classRecords ClassRecord[] 
+  isDeleted    Boolean       @default(false)
+  deletedAt    DateTime?
+}
+
+model Student {
+  id             String           @id
+  surname        String
+  firstname      String
+  admission      String           @unique
+  email          String?          @unique
+  sex            Sex
+  img            String?
+  address        String?
+  phone          String?
+  createdAt      DateTime         @default(now())
+  session        Session          @relation(fields: [sessionId], references: [id])
+  sessionId      Int
+  grade          Grade            @relation(fields: [gradeId], references: [id])
+  gradeId        Int
+  class          Class            @relation(fields: [classId], references: [id])
+  classId        Int
+  subjects       StudentSubject[]
+  paymentStatus  PaymentStatus    @default(NOT_PAID)
+  paymentHistory PaymentHistory[] // ✅ Link to new payment records
+  results        Result[]
+  attendance     Attendance[]
+  classRecords   ClassRecord[]
+  histories      StudentHistory[]
+  term           Term             @relation(fields: [termId], references: [id])
+  termId         Int
+  isDeleted      Boolean          @default(false)
+  deletedAt      DateTime?
+}
+
+model PaymentHistory {
+  id            Int           @id @default(autoincrement())
+  student       Student       @relation(fields: [studentId], references: [id])
+  studentId     String
+  term          Term          @relation(fields: [termId], references: [id])
+  termId        Int
+  session       Session       @relation(fields: [sessionId], references: [id])
+  sessionId     Int
+  amount        Float?        // Optional amount
+  status        PaymentStatus @default(NOT_PAID)
+  paidAt        DateTime?     // Null if pending
+  paymentMethod String?       // Optional payment method (e.g., "BANK_TRANSFER", "CARD", "CASH")
+  transactionRef String?      // Optional transaction reference for tracking
+  updatedBy     String?       // Optional field for tracking who made the update
+  createdAt     DateTime      @default(now())
+
+  @@index([studentId, sessionId, termId]) // Optimize queries
+}
+
+
+model StudentHistory {
+  id            Int          @id @default(autoincrement())
+  student       Student      @relation(fields: [studentId], references: [id])
+  studentId     String
+  session       Session      @relation(fields: [sessionId], references: [id])
+  sessionId     Int
+  grade         Grade        @relation(fields: [gradeId], references: [id])
+  gradeId       Int
+  class         Class        @relation(fields: [classId], references: [id])
+  classId       Int
+  results       Result[] // ✅ Store all results for the session  
+  classRecord   ClassRecord? @relation(fields: [classRecordId], references: [id])
+  classRecordId Int?
+  createdAt     DateTime     @default(now())
+
+  @@unique([studentId, sessionId]) // ✅ One history record per student per session
+}
+
+model Result {
+  id               Int              @id @default(autoincrement())
+  student          Student          @relation(fields: [studentId], references: [id])
+  studentId        String
+  subject          Subject          @relation(fields: [subjectId], references: [id])
+  subjectId        Int
+  teacher          Teacher          @relation(fields: [teacherId], references: [id])
+  teacherId        String
+  term             Term             @relation(fields: [termId], references: [id])
+  termId           Int
+  session          Session          @relation(fields: [sessionId], references: [id])
+  sessionId        Int
+  grade            Grade            @relation(fields: [gradeId], references: [id])
+  gradeId          Int
+  class            Class            @relation(fields: [classId], references: [id])
+  classId          Int
+  histories        StudentHistory[] // ✅ New relation to track movement across sessions
+  firstAssessment  Float
+  secondAssessment Float
+  examScore        Float
+  totalScore       Float            @default(0)
+  subPosition      String            @default("N/A")
+  status           ResultStatus     @default(PENDING)
+  isDeleted        Boolean          @default(false)
+  deletedAt        DateTime?
+}
+
+model ClassRecord {
+  id             Int              @id @default(autoincrement())
+  student        Student          @relation(fields: [studentId], references: [id])
+  studentId      String
+  class          Class            @relation(fields: [classId], references: [id])
+  classId        Int
+  term           Term             @relation(fields: [termId], references: [id])
+  termId         Int
+  session        Session          @relation(fields: [sessionId], references: [id]) // ✅ Added sessionId
+  sessionId      Int // ✅ New foreign key
+  teacher        Teacher          @relation(fields: [teacherId], references: [id])
+  teacherId      String
+  remark         String? // ✅ Class teacher's remarks
+  position       Int? // ✅ Student's position in class
+  promotion      PromotionStatus?
+  preferredClass String? // ✅ Stores JSS3 students' preferred class for SSS1
+
+  histories StudentHistory[] // ✅ New relation to track movement across sessions// ✅ Promotion status at the end of the year
+  isDeleted Boolean          @default(false)
+  deletedAt DateTime?
+}
+
+enum ResultStatus {
+  PENDING
+  FINALIZED
+}
+
+enum PromotionStatus {
+  PROMOTED
+  REPEATED
+  NOT_SET
+}
+
+model Attendance {
+  id        Int       @id @default(autoincrement())
+  student   Student   @relation(fields: [studentId], references: [id])
+  studentId String
+  subject   Subject   @relation(fields: [subjectId], references: [id])
+  subjectId Int
+  term      Term      @relation(fields: [termId], references: [id])
+  termId    Int
+  date      DateTime  @default(now())
+  status    Boolean
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+enum PaymentStatus {
+  PAID
+  NOT_PAID
+  PARTIALLY_PAID
+}
