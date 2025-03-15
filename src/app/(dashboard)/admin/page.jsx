@@ -15,7 +15,7 @@ export default async function AdminPage() {
     const { userId } = await auth();
     const role = await getUserRole(); 
     
-    if (userId && role && (!userId || role!== "admin")) {
+    if (userId && role && (role!== "admin")) {
         redirect("/sign-in");
     }
   
