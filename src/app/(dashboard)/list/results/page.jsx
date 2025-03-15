@@ -6,7 +6,8 @@ import StudentResultView from '@/components/StudentResultView';
 
 const resultUploadPage = async () => {
   const { role, userId } = await getCurrentUser();
-  if (role !== 'teacher' || !userId) {
+  console.log(role, userId)
+  if (role != 'teacher' || !userId) {
     throw new Error("Unauthorized access: Only teachers can upload results.");
   }
 

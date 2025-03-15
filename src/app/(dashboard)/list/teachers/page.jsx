@@ -11,9 +11,8 @@ import { redirect } from "next/navigation";
 
 export default async function TeacherListPage({ searchParams }) {
   const params = searchParams ? await searchParams : {};
-  const role = await getUserRole();
-
-  if (role !== "admin" && role !== "teacher") {
+  const role = await getUserRole()
+  if (role != "admin" && role != "teacher") {
     redirect("/sign-in");
   }
   const page = parseInt(params.page) || 1;
