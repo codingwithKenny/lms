@@ -208,7 +208,7 @@ export const updateTeacher = async (teacherId, data) => {
     await clerkClient.users.updateUser(teacherId, {
       emailAddress: [data.email],
       username: data.username,
-      password: data.password? data.password : existingTeacher.password,
+      password: data.password ? data.password : existingTeacher.password,
     });
 
     const updatedTeacher = await prisma.teacher.update({
@@ -371,7 +371,7 @@ export async function createStudent(data) {
       firstName: data.firstname,
       surname: data.surname,
       username: userName,
-      password: storedPassword.toUpperCase(), // Ensure this meets complexity requirements
+      password: storedPassword.replace(/\s+/g, "").toUpperCase(),
       publicMetadata: { role: "student" },
     };
 
@@ -512,9 +512,12 @@ export const updateStudent = async (studentId, data) => {
     }
     const generateUsername = (admission) => "mcco-" + admission;
     const userName = generateUsername(data.admission);
+    const generatePassword = (surname, firstname) => surname + firstname;
+    const storedPassword = generatePassword(data.surname, data.firstname);
     // Update the Clerk user information
     const updateUser = {
       username: userName,
+      password: storedPassword.replace(/\s+/g, "").toUpperCase(),
       emailAddress: data.email ? data.email.trim() : undefined, // Optional email update
     };
 
@@ -699,26 +702,39 @@ export async function createSession(sessionName) {
       if (lastActiveTerm) {
         console.log("📌 Last active term:", lastActiveTerm.name);
 
-        // ✅ If last active term is "Third Term", save payment history
         if (lastActiveTerm.name === "Third Term") {
-          const allStudents = await prisma.student.findMany({
-            where: { sessionId: lastSession.id, isDeleted: false },
-            select: { id: true, paymentStatus: true },
-          });
-
-          if (allStudents.length > 0) {
-            const paymentHistoryRecords = allStudents.map((student) => ({
-              studentId: student.id,
+          const existingHistory = await prisma.paymentHistory.findFirst({
+            where: {
               sessionId: lastSession.id,
               termId: lastActiveTerm.id,
-              status: student.paymentStatus,
-            }));
-
-            await prisma.paymentHistory.createMany({
-              data: paymentHistoryRecords,
+            },
+          });
+        
+          if (!existingHistory) {
+            const allStudents = await prisma.student.findMany({
+              where: { sessionId: lastSession.id, isDeleted: false },
+              select: { id: true, paymentStatus: true },
             });
+        
+            if (allStudents.length > 0) {
+              const paymentHistoryRecords = allStudents.map((student) => ({
+                studentId: student.id,
+                sessionId: lastSession.id,
+                termId: lastActiveTerm.id,
+                status: student.paymentStatus,
+              }));
+        
+              await prisma.paymentHistory.createMany({
+                data: paymentHistoryRecords,
+              });
+        
+              console.log("✅ Payment history saved for Third Term.");
+            }
+          } else {
+            console.log("⚠️ Payment history already exists — skipping save.");
           }
         }
+        
       }
 
       // ✅ Deactivate last session and all its terms
@@ -1134,7 +1150,7 @@ export const createResult = async (results) => {
       })
       .filter(Boolean);
 
-      console.log(validResults,"hereeeeeeeeeeee")
+    console.log(validResults, "hereeeeeeeeeeee")
 
 
     if (validResults.length === 0) {
@@ -1143,7 +1159,7 @@ export const createResult = async (results) => {
         error: "❌ Some results are invalid. Fix them before submission.",
       };
     }
-       console.log("ready to create")
+    console.log("ready to create")
     // ✅ Insert results
     await prisma.result.createMany({ data: validResults });
     console.log("�� Results created successfully");
@@ -1232,6 +1248,8 @@ export const createClassRecord = async (records) => {
           position: parseInt(record.position, 10) || null,
           promotion,
           preferredClass, // ✅ Automatically included if available, else null
+          skills: record.skills || {},           // ✅ Now included
+          attendance: record.attendance || 0,
         };
       })
       .filter(Boolean);
@@ -1344,7 +1362,7 @@ export const createAdmin = async (data) => {
   }
 };
 
-export default async () => {};
+export default async () => { };
 
 export async function updateTermStatus(termId, sessionId) {
   console.log("🔄 Updating term status", { termId, sessionId });
@@ -1509,3 +1527,73 @@ export const updatePaymentHistory = async ({
     return { success: false, message: error.message };
   }
 };
+
+
+export const saveResumptionDate = async ({ sessionId, termId, resumptionDate }) => {
+  try {
+    console.log("Sending to saveResumptionDate:", {
+      sessionId,
+      termId,
+      resumptionDate,
+    });
+
+    if (!sessionId || !termId || !resumptionDate) {
+      return { success: false, message: "Missing required parameters" };
+    }
+
+    const existingRecord = await prisma.resumption.findFirst({
+      where: { sessionId, termId },
+    });
+
+    if (existingRecord) {
+      return {
+        success: false,
+        message: "Resumption record already exists for this session and term",
+      };
+    }
+
+    const newResumption = await prisma.resumption.create({
+      data: {
+        sessionId: Number(sessionId),
+        termId: Number(termId),
+        resumptionDate: new Date(resumptionDate),
+      },
+    });
+
+    return {
+      success: true,
+      message: "Resumption date saved successfully",
+      data: newResumption,
+    };
+  } catch (error) {
+    console.log("Error saving resumption:", error);
+    return { success: false, message: error.message };
+  }
+};
+
+
+
+export const updateResumptionDate = async ({ sessionId, termId, resumptionDate }) => {
+  try {
+    if (!sessionId || !termId || !resumptionDate) {
+      return { success: false, message: "Missing required parameters" };
+    }
+
+    const updated = await prisma.resumption.updateMany({
+      where: { sessionId, termId },
+      data: {
+        resumptionDate: new Date(resumptionDate),
+      },
+    });
+
+    return {
+      success: true,
+      message: "Resumption date updated successfully",
+      data: updated,
+    };
+  } catch (error) {
+    console.error(error);
+    return { success: false, message: error.message };
+  }
+};
+

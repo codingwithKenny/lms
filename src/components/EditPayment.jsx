@@ -89,7 +89,7 @@ const EditUnpaidStudent = () => {
   };
 
   return (
-    <div>
+    <div className="bg-pink-300 p-2 rounded-md">
       {/* Session Dropdown */}
       <div className="bg-white shadow-md rounded-lg p-6 mb-6">
         <label className="block text-sm font-semibold text-gray-700 mb-2">

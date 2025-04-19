@@ -5,6 +5,7 @@ import { getUserRole } from "@/lib/authUtils";
 import prisma from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
+import ResumptionDate from "@/components/ResumptionDate";
 
 
 const settingPage = async() => {
@@ -32,9 +33,15 @@ const settingPage = async() => {
       <h1 className="text-center font-bold">SETTING PAGE</h1>
       <UpdateSessionCard session={session} />
 
-      <div>
-      <h1>UPDATE DEFAULTER</h1>
+      <div className="mt-4">
+      <h1 className="text-center font-bold">UPDATE PAYMENT FOR PAST TERMS</h1>
         <EditUnpaidStudent />
+      </div>
+
+
+      <div className="mt-4">
+      <h1 className="text-center font-bold">UPDATE RESUMPTION DATE</h1>
+        <ResumptionDate/>
       </div>
       
     </div>

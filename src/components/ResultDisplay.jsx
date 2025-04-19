@@ -45,9 +45,9 @@ const ResultDisplay = ({
   const selectedTermName = databaseData.terms?.find(
     (t) => t.id === selectedTerm
   )?.name;
-     
 
-  console.log(databaseData.classRecord,"hereeeeeeeeeeee")
+
+  console.log(databaseData.classRecord, "hereeeeeeeeeeee")
   // GET CLASSRECORD FOR POSITION,REMARK AND PROMOTION
   const studentClassRecord = useMemo(() => {
     return (
@@ -64,7 +64,7 @@ const ResultDisplay = ({
   const calculatePerformance = (ca1, ca2, exam) => {
     const total =
       (parseFloat(ca1) || 0) + (parseFloat(ca2) || 0) + (parseFloat(exam) || 0);
-      if (total >= 70) return "A1";
+    if (total >= 70) return "A1";
     if (total >= 65) return "B2";
     if (total >= 60) return "B3";
     if (total >= 57) return "C4";
@@ -113,7 +113,7 @@ const ResultDisplay = ({
         (payment.amount !== null || payment.amount === null)
     );
   }, [databaseData.paymentHistory, studentInfo.id, sessionId, selectedTerm]);
-  
+
 
   return (
     <div className="p-3 relative">
@@ -123,7 +123,7 @@ const ResultDisplay = ({
           the payment to access the result.
         </div>
       ) : (
-        <div className="w-[600px]">
+        <div className="w-[700px]">
           <div
             ref={printRef}
             id="printable-area"
@@ -131,8 +131,8 @@ const ResultDisplay = ({
             style={{
               backgroundImage: "url('/logo.png')",
               backgroundRepeat: "no-repeat",
-              backgroundPosition: "center",
-              backgroundSize: "30%",
+              backgroundPosition: "left bottom",
+              backgroundSize: "40%",
               backgroundColor: "rgba(255, 255, 255, 0.96)",
               backgroundBlendMode: "lighten",
             }}
@@ -186,19 +186,23 @@ const ResultDisplay = ({
                 <p>
                   <strong>Session:</strong> {selectedSession}
                 </p>
-                <p>
-                  <strong>Times Present:</strong> ____
-                </p>
+                <div>
+                  <strong></strong>
+                  {studentClassRecord?.map((record) => (
+                    <div key={record.id}>Times Present: {record.attendance}</div>
+                  ))}
+                </div>
+
               </div>
             </div>
 
             {/* RESULT TABLE */}
             <div className="flex ">
-              <div className=" w-[70%]">
+              <div className="">
                 <table className="w-full border-collapse border border-gray-300 text-xs mt-3">
                   <thead>
                     <tr className="bg-gray-200 text-center">
-                      <th className="border p-1 ">Subject</th>
+                      <th className="border p-1 w-80 ">Subject</th>
                       <th className="border p-1">CA1</th>
                       <th className="border p-1">CA2</th>
                       <th className="border p-1">Exam</th>
@@ -213,7 +217,7 @@ const ResultDisplay = ({
                       .filter((result) => result.subject)
                       .map((result, index) => (
                         <tr key={index} className="text-center border-t">
-                          <td className="border p-1 text-left">
+                          <td className="border p-1 text-left text-xs">
                             {result.subject.name}
                           </td>
                           <td className="border p-1">
@@ -245,41 +249,38 @@ const ResultDisplay = ({
                 </table>
               </div>
 
-              <div className="w-[30%] ml-4">
-                <table className="w-full border-collapse border border-gray-300 text-sm bg-white mt-2">
+              <div className="ml-1 w-[20%]">
+                <table className="w-full border-collapse border border-gray-300 text-xs bg-white mt-2">
                   <thead>
-                    <tr className="bg-gray-200 text-center">
-                      <th className="border p-2">
-                        {" "}
-                        <h3 className="text-md font-semibold text-center">
-                          Affective Skills
-                        </h3>
+                    <tr>
+                      <th colSpan={2} className="border p-2 text-center bg-gray-100">
+                        AFFECTIVE AND PSYCHOMOTOR (BEHAVIOUR AND SKILL)
                       </th>
+                    </tr>
+                    <tr className="bg-gray-200 text-center">
+                      <th className="border p-2">Skills</th>
+                      <th className="border p-2">Grade</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr className="text-center border-t">
-                      <td className="border p-2 text-left">Attentiveness</td>
-                    </tr>
-                    <tr className="text-center border-t">
-                      <td className="border p-2 text-left">Neatness</td>
-                    </tr>
-                    <tr className="text-center border-t">
-                      <td className="border p-2 text-left">Punctuality</td>
-                    </tr>
-                    <tr className="text-center border-t">
-                      <td className="border p-2 text-left">Honesty</td>
-                    </tr>
-                    <tr className="text-center border-t">
-                      <td className="border p-2 text-left">Tolerance</td>
-                    </tr>
+                    {studentClassRecord?.map((record, index) => {
+                      const skills = record.skills || {};
+                      return Object.entries(skills).map(([skillName, grade]) => (
+                        <tr key={`${index}-${skillName}`}>
+                          <td className="border p-2 text-left capitalize">{skillName}</td>
+                          <td className="border p-2 text-center">{grade}</td>
+                        </tr>
+                      ));
+                    })}
                   </tbody>
                 </table>
               </div>
+
+
             </div>
 
             <div>
-              <div className="flex flex-wrap justify-around items-center border p-2 text-xs">
+              <div className="flex justify-around items-center border p-2 text-xs">
                 {/* Position & Promotion Section */}
                 <div className="border w-[50%] text-center">
                   {/* {studentClassRecord?.map((record) => (
@@ -308,25 +309,30 @@ const ResultDisplay = ({
                 </div>
 
                 {/* Co-Curricular Table */}
-                <div className="w-[20%] ml-20">
+                <div className="w-[40%] ml-20">
                   <table className="w-full border-collapse border border-gray-300 text-xs bg-white">
                     <thead>
                       <tr className="bg-gray-200 text-center">
-                        <th className="border p-1">CO-CURRICULAR</th>
+                        <th className="border p-1">KEY TO RATING</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">Sports</td>
+                        <td className="border p-1 text-left">5 – Excellent display of behaviors/skills</td>
                       </tr>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">Music</td>
+                        <td className="border p-1 text-left">4 – Very good display of behaviors/skills</td>
                       </tr>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">Debate</td>
+                        <td className="border p-1 text-left">3 – Satisfactory display of behaviors/skill</td>
                       </tr>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">Honesty</td>
+                        <td className="border p-1 text-left">2 – Limited display of behaviors/skill</td>
+                      </tr>
+                      <tr className="border-t">
+                        <td className="border p-1 text-left">1 – No display of behaviors/skills
+
+</td>
                       </tr>
                     </tbody>
                   </table>
@@ -365,14 +371,14 @@ const ResultDisplay = ({
 
             {/* SCHOOL FOOTER */}
             <div className="mt-3 border-t pt-2 text-center text-xs font-semibold">
-  <p>"We Offer Excellence in Education"</p>
-  
-  <div className="flex flex-col items-center mt-2">
-    <Image src="/principalsign.png" alt="Principal Signature" width={80} height={40} />
-    <div className="w-40 border-b-2 border-black -mt-1"></div>
-    <p className="mt-1">Signed:(Principal)</p>
-  </div>
-</div>
+              <p>"We Offer Excellence in Education"</p>
+
+              <div className="flex flex-col items-center mt-2">
+                <Image src="/principalsign.png" alt="Principal Signature" width={80} height={40} />
+                <div className="w-40 border-b-2 border-black -mt-1"></div>
+                <p className="mt-1">Signed:(Principal)</p>
+              </div>
+            </div>
 
           </div>
           {/* PRINT BUTTON */}

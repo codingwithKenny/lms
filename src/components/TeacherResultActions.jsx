@@ -354,6 +354,7 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
           <table className="w-full mt-2 border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-100">
+                <th className="border p-2">S/N</th>
                 <th className="border p-2">Student Name</th>
                 <th className="border p-2">Grade</th>
                 <th className="border p-2">CA 1</th>
@@ -363,10 +364,11 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
               </tr>
             </thead>
             <tbody className="text-center">
-              {filteredStudents.map((student) => {
+              {filteredStudents.map((student, index) => {
                 const studentId = student.id;
                 return (
                   <tr key={studentId} className="border-t">
+                    <td className="border p-2">{index +1}</td>
                     <td className="border p-2">{student.name}</td>
                     <td className="border p-2">{student.grade}</td>
                     {["ca1", "ca2", "exam"].map((field) => (

@@ -37,6 +37,7 @@ const CheckResult = async () => {
       id: true,
       firstname: true,
       surname: true,
+      admission:true,
       session: { select: { name: true } }, 
       grade: { select: { id: true, name: true } }, 
       class: { select: { id: true, name: true } }, 

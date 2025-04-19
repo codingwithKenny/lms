@@ -5,12 +5,16 @@ import * as SignIn from "@clerk/elements/sign-in";
 import { useUser, useAuth } from "@clerk/nextjs";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff } from "lucide-react"; // or any icon library
+
 
 const LoginPage = () => {
   const { isLoaded, isSignedIn, user } = useUser();
   const { sessionId, signOut } = useAuth(); // Get sessionId & signOut function
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -74,17 +78,25 @@ const LoginPage = () => {
             />
             <Clerk.FieldError className="text-xs text-red-400" />
           </Clerk.Field>
-          <Clerk.Field name="password" className="flex flex-col gap-2">
-            <Clerk.Label className="text-xs text-gray-500">
-              Password
-            </Clerk.Label>
-            <Clerk.Input
-              type="password"
-              required
-              className="p-2 rounded-md ring-1 ring-gray-300"
-            />
+          <Clerk.Field name="password" className="flex flex-col gap-2 relative">
+            <Clerk.Label className="text-xs text-gray-500">Password</Clerk.Label>
+            <div className="relative">
+              <Clerk.Input
+                type={showPassword ? "text" : "password"}
+                required
+                className="p-2 pr-10 w-full rounded-md ring-1 ring-gray-300"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute top-1/2 right-2 -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             <Clerk.FieldError className="text-xs text-red-400" />
           </Clerk.Field>
+
           <SignIn.Action
             submit
             className="bg-purple-500 text-white my-1 rounded-md text-sm p-[10px]"

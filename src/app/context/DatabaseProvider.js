@@ -17,7 +17,8 @@ export const DatabaseProvider = ({ children }) => {
     term:[],
     paymentHistory:[],
     studentHistory: [],
-    student:[]
+    student:[],
+    resumptions:[]
   });
 
   const [loading, setLoading] = useState(true);

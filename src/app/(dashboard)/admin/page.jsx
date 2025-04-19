@@ -10,6 +10,7 @@ import SessionModal from "@/components/SessionModal";
 import { getUserRole } from "@/lib/authUtils";
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import ResumptionCard from "@/components/ResumptionCard";
 
 export default async function AdminPage() {
     const { userId } = await auth();

@@ -1,48 +1,62 @@
 "use client";
 import { toast } from "@/hooks/use-toast";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { checkClassRecordExists, createClassRecord, fetchTerms } from "@/lib/actions";
 
-const recordSchema = z.object({
-  remarks: z.record(z.string().min(3, "Remark must be at least 3 characters")),
-  positions: z.record(
-    z.number({ invalid_type_error: "Position must be a number" }).int().positive("Position must be greater than 0")
-  ),
-  promotions: z.record(z.string().optional()),
-  preferredClass: z.record(z.string().optional()),
+// Zod schema
+const skillSchema = z.object({
+  honesty: z.number().min(1).max(5),
+  punctuality: z.number().min(1).max(5),
+  neatness: z.number().min(1).max(5),
+  tolerance: z.number().min(1).max(5),
+  sports: z.number().min(1).max(5),
+  debate: z.number().min(1).max(5),
+  handwriting: z.number().min(1).max(5),
+  attentiveness: z.number().min(1).max(5),
 });
 
-const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass, selectedSession, currentUser }) => {
+const recordSchema = z.object({
+  remarks: z.record(z.string().min(3, "Remark must be at least 3 characters")),
+  skills: z.record(skillSchema),
+  attendance: z.record(z.number().min(0, "Attendance must be a positive number")),
+  promotions: z.record(z.string().optional().nullable()),
+  preferredClass: z.record(z.string().optional().nullable()),
+});
+
+const TeacherView = ({
+  students,
+  memoizedClasses,
+  memoizedGrades,
+  selectedClass,
+  selectedSession,
+  currentUser,
+}) => {
   const teacherId = currentUser;
   const [terms, setTerms] = useState([]);
   const [selectedTerm, setSelectedTerm] = useState(null);
   const [loading, setLoading] = useState(false);
   const [classRecordExists, setClassRecordExists] = useState(false);
-  const [error, setError] = useState(false);
-
-  // Confirmation modal state
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmationChecked, setConfirmationChecked] = useState(false);
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(recordSchema),
     defaultValues: {
       remarks: {},
-      positions: {},
+      skills: {},
+      attendance: {},
       promotions: {},
       preferredClass: {},
     },
   });
 
-  // Fetch current term(s) when a session is selected
   useEffect(() => {
     if (!selectedSession) return;
     const loadTerms = async () => {
@@ -52,7 +66,13 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
     loadTerms();
   }, [selectedSession]);
 
-  // Actual submission function
+  const selectedTermObj = terms.find((term) => term.id === selectedTerm);
+  const selectedTermName = selectedTermObj?.name;
+  const selectedClassObj = memoizedClasses.find((cl) => cl.id === selectedClass);
+  const selectedGradeObj = memoizedGrades.find((grd) => grd.id === selectedClassObj?.gradeId);
+  const isJSS3 = selectedGradeObj?.name === "JSS3";
+  const isThirdTerm = selectedTermName === "Third Term";
+
   const doSubmitResults = async (data) => {
     setLoading(true);
     try {
@@ -63,35 +83,31 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
         sessionId: selectedSession,
         classId: selectedClass,
         remark: data.remarks[student.id] || "",
-        promotion:
-          selectedTermName === "Third Term" ? data.promotions[student.id] || "Not Set" : undefined,
+        skills: data.skills[student.id] || {},
+        attendance: data.attendance[student.id] || 0,
+        promotion: isThirdTerm ? data.promotions[student.id] || "Not Set" : undefined,
         preferredClass:
-          isJSS3 && selectedTermName === "Third Term" ? data.preferredClass[student.id] || "Not Selected" : undefined,
+          isThirdTerm && isJSS3 ? data.preferredClass[student.id] || "Not Selected" : undefined,
       }));
+
+      // console.log(records)
+
       const response = await createClassRecord(records);
+          console.log(records)
+
       if (!response.success) {
-        toast({
-          description: response.error,
-          variant: "destructive",
-        });
+        toast({ description: response.error, variant: "destructive" });
       } else {
-        toast({
-          description: "✅ CLASS RECORD saved successfully",
-          variant: "success",
-        });
+        toast({ description: "✅ CLASS RECORD saved successfully", variant: "success" });
       }
     } catch (error) {
       console.error("Error saving class record:", error.message);
-      toast({
-        description: "An unexpected error occurred",
-        variant: "destructive",
-      });
+      toast({ description: "An unexpected error occurred", variant: "destructive" });
     } finally {
       setLoading(false);
     }
   };
 
-  // Submission handler using react-hook-form
   const onSubmit = async (data) => {
     if (!selectedTerm || !selectedSession || !selectedClass) {
       toast({
@@ -100,18 +116,6 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
       });
       return;
     }
-    // Check for duplicate positions
-    const positionsArray = Object.values(data.positions).filter((pos) => pos);
-    const uniquePositions = new Set(positionsArray);
-    if (positionsArray.length !== uniquePositions.size) {
-      setError(true);
-      toast({
-        description: "Duplicate positions are not allowed.",
-        variant: "destructive",
-      });
-      return;
-    }
-    // If confirmation isn't checked, open the confirmation modal
     if (!confirmationChecked) {
       setShowConfirmModal(true);
       return;
@@ -119,17 +123,10 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
     await doSubmitResults(data);
   };
 
-  // Derived data for display
-  const selectedTermObj = terms.find((term) => term.id === selectedTerm);
-  const selectedTermName = selectedTermObj?.name;
-  const selectedClassObj = memoizedClasses.find((cl) => cl.id === selectedClass);
-  const selectedGradeObj = memoizedGrades.find((grd) => grd.id === selectedClassObj?.gradeId);
-  const isJSS3 = selectedGradeObj?.name === "JSS3";
-  const isThirdTerm = selectedTermName === "Third Term";
-
   return (
     <div className="p-6 bg-white shadow-md rounded-lg">
       <h2 className="text-xl font-bold text-gray-800">📘 Student Performance</h2>
+
       <div className="mb-4">
         <label className="text-sm font-semibold text-gray-700">Select Term</label>
         <select
@@ -157,18 +154,24 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
           <table className="w-full bg-white rounded-lg shadow-md">
             <thead className="bg-indigo-600 text-white">
               <tr>
+                <th className="p-3 text-left">S/N</th>
                 <th className="p-3 text-left">Student</th>
                 <th className="p-3 text-left">Remark</th>
+                <th className="p-3 text-left">Skill Grade</th>
+                <th className="p-3 text-left">Attendance</th>
                 {isThirdTerm && <th className="p-3 text-left">Promotion</th>}
                 {isThirdTerm && isJSS3 && <th className="p-3 text-left">Preferred Class</th>}
               </tr>
             </thead>
             <tbody>
               {students.length > 0 ? (
-                students.map((student) => (
-                  <tr key={student.id} className="border-b border-gray-300">
+                students.map((student,i) => (
+                  <tr key={student.id} className="border border-gray-400 p-3">
+                    <td className="border border-gray-400 p-3">{i + 1}</td>
                     <td className="p-3">{`${student.surname} ${student.firstname}`}</td>
-                    <td className="p-3">
+
+                    {/* Remark */}
+                    <td className="border border-gray-400 p-3">
                       <input
                         type="text"
                         className={`border p-2 w-full rounded-md focus:ring-2 focus:ring-indigo-500 ${
@@ -182,20 +185,55 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
                         </p>
                       )}
                     </td>
-                    {/* <td className="p-3">
+
+                    {/* Skills */}
+                    <td className="border border-gray-400 p-3">
+                      <div className="flex flex-wrap gap-4">
+                        {[
+                          "honesty",
+                          "punctuality",
+                          "neatness",
+                          "tolerance",
+                          "sports",
+                          "debate",
+                          "handwriting",
+                          "attentiveness",
+                        ].map((skill) => (
+                          <div key={skill} className="flex flex-col">
+                            <label className="text-xs font-medium capitalize text-gray-700">
+                              {skill}
+                            </label>
+                            <input
+                              type="number"
+                              min={1}
+                              max={5}
+                              className="w-1/2 border rounded-md p-1 text-center text-sm"
+                              {...register(`skills.${student.id}.${skill}`, {
+                                valueAsNumber: true,
+                              })}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </td>
+
+                    {/* Attendance */}
+                    <td className="border border-gray-400 p-3">
                       <input
                         type="number"
-                        className={`border p-2 w-full text-center rounded-md focus:ring-2 focus:ring-indigo-500 ${
-                          errors.positions?.[student.id] ? "border-red-500" : ""
+                        className={`border p-2 w-20 rounded-md focus:ring-2 focus:ring-indigo-500 ${
+                          errors.attendance?.[student.id] ? "border-red-500" : ""
                         }`}
-                        {...register(`positions.${student.id}`, { valueAsNumber: true })}
+                        {...register(`attendance.${student.id}`, { valueAsNumber: true })}
                       />
-                      {errors.positions?.[student.id] && (
+                      {errors.attendance?.[student.id] && (
                         <p className="text-red-500 text-sm mt-1">
-                          {errors.positions[student.id].message}
+                          {errors.attendance[student.id].message}
                         </p>
                       )}
-                    </td> */}
+                    </td>
+
+                    {/* Promotion */}
                     {isThirdTerm && (
                       <td className="p-3">
                         <select
@@ -208,13 +246,10 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
                           <option value="PROMOTED">Promoted</option>
                           <option value="REPEATED">Repeat</option>
                         </select>
-                        {errors.promotions?.[student.id] && (
-                          <p className="text-red-500 text-sm mt-1">
-                            {errors.promotions[student.id].message}
-                          </p>
-                        )}
                       </td>
                     )}
+
+                    {/* Preferred Class */}
                     {isThirdTerm && isJSS3 && (
                       <td className="p-3">
                         <select
@@ -234,7 +269,7 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
                 ))
               ) : (
                 <tr>
-                  <td colSpan="5" className="text-gray-500 text-center p-4">
+                  <td colSpan="6" className="text-gray-500 text-center p-4">
                     No students found.
                   </td>
                 </tr>
@@ -242,16 +277,12 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
             </tbody>
           </table>
 
-          {/* Save Button triggers confirmation modal */}
           <div className="mt-6 flex gap-4">
             <button
               className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
               type="button"
               disabled={loading}
-              onClick={(e) => {
-                e.preventDefault();
-                setShowConfirmModal(true);
-              }}
+              onClick={() => setShowConfirmModal(true)}
             >
               {loading ? "Saving..." : "Save"}
             </button>
@@ -265,7 +296,8 @@ const TeacherView = ({ students, memoizedClasses, memoizedGrades, selectedClass,
           <div className="bg-white p-6 rounded-md w-96">
             <h2 className="text-lg font-bold mb-4">Confirm Submission</h2>
             <p className="mb-4">
-              Are you sure you want to submit this class result? Once submitted, you won't be able to edit it.
+              Are you sure you want to submit this class result? Once submitted, you won't be able
+              to edit it.
             </p>
             <div className="flex items-center gap-2 mb-4">
               <input

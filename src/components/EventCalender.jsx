@@ -4,6 +4,7 @@ import Image from "next/image";
 import React, { useState, useEffect } from "react";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css"; // Import the default Calendar styles
+import ResumptionCard from "./ResumptionCard";
 
 // TEMPORARY EVENT DATA
 const Events = [
@@ -44,6 +45,8 @@ const EventCalendar = () => {
     <div className="rounded-md bg-purple-50 p-4 shadow-md">
       {/* Calendar Component */}
       <Calendar onChange={setValue} value={value} className="text-xs" locale="en-US" />
+            <ResumptionCard/>
+      
 
       {/* Events Header */}
       <div className="flex justify-between items-center mt-4 mb-2">

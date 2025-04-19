@@ -64,7 +64,7 @@ export default function Navbar() {
         </div>
 
         {/* Sign Out Button */}
-        <UserButton afterSignOutUrl="/" />
+        {/* <UserButton className="disabled-user-button" afterSignOutUrl="/" /> */}
       </div>
     </div>
   );

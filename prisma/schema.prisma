@@ -114,6 +114,7 @@ model Session {
   paymentHistory PaymentHistory[]
   grades         Grade[]
   students       Student[]
+  resumptions Resumption[]
   isDeleted      Boolean          @default(false)
   deletedAt      DateTime?
 
@@ -131,6 +132,7 @@ model Term {
   results      Result[]
   attendance   Attendance[]
   classRecords ClassRecord[] 
+  resumptions Resumption[]
   isDeleted    Boolean       @default(false)
   deletedAt    DateTime?
 }
@@ -247,10 +249,28 @@ model ClassRecord {
   promotion      PromotionStatus?
   preferredClass String? // ✅ Stores JSS3 students' preferred class for SSS1
 
+  skills         Json?            // JSON object of skill ratings
+  attendance     Int?             // Total days present
+
   histories StudentHistory[] // ✅ New relation to track movement across sessions// ✅ Promotion status at the end of the year
   isDeleted Boolean          @default(false)
   deletedAt DateTime?
 }
+model Resumption {
+  id           Int      @id @default(autoincrement())
+  session      Session  @relation(fields: [sessionId], references: [id])
+  sessionId    Int
+  term         Term     @relation(fields: [termId], references: [id])
+  termId       Int
+  resumptionDate DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  isDeleted    Boolean  @default(false)
+  deletedAt    DateTime?
+
+  @@unique([sessionId, termId]) // Prevent duplicates for same session and term
+}
+
 
 enum ResultStatus {
   PENDING

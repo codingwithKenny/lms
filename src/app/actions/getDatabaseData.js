@@ -8,7 +8,7 @@ export async function getDatabaseData() {
     console.log("🟡 Fetching database data...");
 
     // 🔵 Parallelize requests to speed up data fetching
-    const [sessions, grades, classes, subjects, teachers, parents, terms,classRecord, paymentHistory,studentHistory,student] = await Promise.all([
+    const [sessions, grades, classes, subjects, teachers, parents, terms,classRecord, paymentHistory,studentHistory,student,resumption] = await Promise.all([
       prisma.session.findMany({
         select: { id: true, name: true, isCurrent: true },
       }),
@@ -31,7 +31,7 @@ export async function getDatabaseData() {
         select: { id: true, name: true },
       }),
       prisma.term.findMany({  // ✅ Fetch terms
-        select: { id: true, name: true, sessionId: true },
+        select: { id: true, name: true, sessionId: true, isCurrent: true },
       }),
       prisma.classRecord.findMany({
           include: {
@@ -67,6 +67,18 @@ export async function getDatabaseData() {
         prisma.student.findMany({
           select: { id: true, firstname: true, surname:true }, // ✅ Fetch students
         }),
+        prisma.resumption.findMany({
+          select: {
+            id: true,
+            sessionId: true,
+            termId: true,
+            resumptionDate: true,  // Fetch the actual resumption date
+            createdAt: true,
+            updatedAt: true,
+            isDeleted: true,
+          },
+        }),
+        
     ]);
 
     // Log the count of each result after they are all fetched
@@ -81,10 +93,12 @@ export async function getDatabaseData() {
     console.log("✅ paymentHistory Fetched:", paymentHistory.length); // ✅ Log terms count
     console.log("✅ studentHistory Fetched:", studentHistory.length); // ✅ Log terms count
     console.log("✅ student Fetched:", student.length); // ✅ Log terms count
+    console.log("✅ resumption Fetched:",resumption.length); // ✅ Log terms count
 
     return {
       success: true,
-      data: { sessions, grades, classes, subjects, parents, teachers, terms,classRecord ,paymentHistory,studentHistory,student}, // ✅ Include terms
+      data: { sessions, grades, classes, subjects, parents, teachers, terms,classRecord ,paymentHistory,studentHistory,student,resumptions: resumption, // Rename here
+}, // ✅ Include terms
     };
   } catch (error) {
     console.error("❌ Prisma Error:", error.message);
