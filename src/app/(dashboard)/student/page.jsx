@@ -27,7 +27,7 @@ const studentPage = async () => {
       img: true,
       email: true,
       phone: true,
-      sessionId: true, // ✅ Needed for resumption query
+      sessionId: true,
       term: { select: { id: true, name: true } },
       class: {
         select: {
@@ -57,28 +57,21 @@ const studentPage = async () => {
 
   const latestSession = await prisma.session.findFirst({
     orderBy: { id: "desc" },
-    select: { name: true },
+    select: { id: true, name: true },
   });
 
-  const StudentCurrentClass = await prisma.class.findFirst({
-    where: {
-      students: {
-        some: { id: userId },
-      },
-    },
-    select: {
-      name: true,
-      grade: { select: { name: true } },
-    },
+  const Newterm = await prisma.term.findFirst({
+    where: { isCurrent: true },
+    select: { id: true, name: true, sessionId: true, isCurrent: true },
   });
 
   const resumption = await prisma.resumption.findFirst({
     where: {
-      sessionId: student.sessionId,
-      termId: student.term?.id,
+      sessionId: latestSession?.id,
+      termId: Newterm?.id,
     },
     select: {
-      resumptionDate: true, // ✅ Must match your schema
+      resumptionDate: true,
     },
   });
 
@@ -117,8 +110,7 @@ const studentPage = async () => {
               <div className="flex items-center gap-2">
                 <Image src="/date.png" alt="Session" width={16} height={16} />
                 <span className="text-gray-700">
-                  {latestSession?.name || "N/A"} -{" "}
-                  {student?.term?.name || "Unknown Term"}
+                  {latestSession?.name || "N/A"} - {Newterm?.name || "Term"}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -159,10 +151,12 @@ const studentPage = async () => {
             />
             <div>
               <h1 className="text-xl text-pink-500 font-semibold">RESUMPTION DATE</h1>
-              <span className="text-sm text-gray-500">
-                {resumption?.resumptionDate
-                  ? new Date(resumption.resumptionDate).toLocaleDateString()
-                  : "N/A"}
+              <span className="text-bold text-gray-500">
+                {resumption?.resumptionDate && Newterm
+                  ? `${Newterm.name} starts on ${new Date(
+                      resumption.resumptionDate
+                    ).toLocaleDateString()}`
+                  : "No resumption date found"}
               </span>
             </div>
           </div>
@@ -175,7 +169,9 @@ const studentPage = async () => {
               height={24}
             />
             <div>
-              <h1 className="text-xl font-semibold">{subjectCount || "N/A"}</h1>
+              <h1 className="text-xl font-semibold">
+                {subjectCount || "N/A"}
+              </h1>
               <span className="text-sm text-gray-500">Subjects</span>
             </div>
           </div>

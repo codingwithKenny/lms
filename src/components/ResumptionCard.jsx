@@ -6,6 +6,7 @@ import { useDatabase } from "@/app/context/DatabaseProvider";
 export default function ResumptionCard() {
   const { databaseData } = useDatabase();
   const [currentResumption, setCurrentResumption] = useState(null);
+  const [currentTerm, setCurrentTerm] = useState(null);
 
   useEffect(() => {
     if (
@@ -14,19 +15,15 @@ export default function ResumptionCard() {
       databaseData.resumptions
     ) {
       const currentSession = databaseData.sessions.find((s) => s.isCurrent);
-      const currentTerm = databaseData.terms.find((t) => t.isCurrent); // Fetching the current term
+      const term = databaseData.terms.find((t) => t.isCurrent);
+      setCurrentTerm(term);
 
-      console.log("Current Session:", currentSession);
-      console.log("Current Term:", currentTerm); // Log current term to see if it's correctly fetched
-
-      if (currentSession && currentTerm) {
+      if (currentSession && term) {
         const resumption = databaseData.resumptions.find(
           (r) =>
             Number(r.sessionId) === Number(currentSession.id) &&
-            Number(r.termId) === Number(currentTerm.id)
+            Number(r.termId) === Number(term.id)
         );
-
-        console.log("Matched Resumption:", resumption);
 
         setCurrentResumption(resumption?.resumptionDate || null);
       }
@@ -44,11 +41,11 @@ export default function ResumptionCard() {
         </span>
       </div>
       <p className="text-white mt-1 text-xs">
-        {currentResumption
-          ? `Next term starts on ${new Date(
+        {currentResumption && currentTerm
+          ? `${currentTerm.name} starts on ${new Date(
               currentResumption
             ).toLocaleDateString()}`
-          : "No resumption date found for the current term"}
+          : "No resumption date found"}
       </p>
     </div>
   );
