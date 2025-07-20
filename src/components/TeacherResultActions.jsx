@@ -20,9 +20,9 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
   const [confirmationChecked, setConfirmationChecked] = useState(false);
 
   const scoreSchema = z.object({
-    ca1: z.preprocess((val) => parseFloat(val), z.number().min(0, "Must be ≥ 0").max(40, "Must be ≤ 20")),
-    ca2: z.preprocess((val) => parseFloat(val), z.number().min(0, "Must be ≥ 0").max(40, "Must be ≤ 20")),
-    exam: z.preprocess((val) => parseFloat(val), z.number().min(0, "Must be ≥ 0").max(100, "Must be ≤ 60")),
+    ca1: z.preprocess((val) => parseFloat(val), z.number().min(0, "Must be ≥ 0")),
+    ca2: z.preprocess((val) => parseFloat(val), z.number().min(0, "Must be ≥ 0")),
+    exam: z.preprocess((val) => parseFloat(val), z.number().min(0, "Must be ≥ 0")),
   });
 
   // Filter terms from the selected session
@@ -40,6 +40,10 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
     filteredGrades.find((g) => g.id === selectedGrade)?.classes || [],
     [selectedGrade, filteredGrades]
   );
+  const selectedTermName = useMemo(() => {
+  const termObj = filteredTerms.find((term) => term.id === selectedTerm);
+  return termObj?.name;
+}, [selectedTerm, filteredTerms]);
 
   // LOAD STUDENT ACCORDING TO THE FILTERED
   const handleLoadStudents = () => {
@@ -153,6 +157,7 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
       setLoading(false);
     }
   };
+  
 
   // Modified handleSubmitResults: if confirmation is not checked, open modal
   const handleSubmitResults = async () => {
@@ -168,7 +173,9 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
       return;
     }
     await doSubmitResults();
+    
   };
+  
 
   return (
     <div className="p-6 bg-purple-50 min-h-screen">
@@ -352,17 +359,30 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
         <div className="mt-6 w-full overflow-x-auto">
           <h3 className="text-md font-semibold text-center">Students in Selected Class</h3>
           <table className="w-full mt-2 border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2">S/N</th>
-                <th className="border p-2">Student Name</th>
-                <th className="border p-2">Grade</th>
-                <th className="border p-2">CA 1</th>
-                <th className="border p-2">CA 2</th>
-                <th className="border p-2">Exam</th>
-                <th className="border p-2">Position</th>
-              </tr>
-            </thead>
+          <thead>
+  <tr className="bg-gray-100">
+    <th className="border p-2">S/N</th>
+    <th className="border p-2">Student Name</th>
+    <th className="border p-2">Grade</th>
+
+    {selectedTermName === "Third Term" ? (
+      <>
+        <th className="border p-2">1st Term</th>
+        <th className="border p-2">2nd Term</th>
+        <th className="border p-2">3rd Term</th>
+      </>
+    ) : (
+      <>
+        <th className="border p-2">CA 1</th>
+        <th className="border p-2">CA 2</th>
+        <th className="border p-2">Exam</th>
+      </>
+    )}
+
+    <th className="border p-2">Position</th>
+  </tr>
+</thead>
+
             <tbody className="text-center">
               {filteredStudents.map((student, index) => {
                 const studentId = student.id;
