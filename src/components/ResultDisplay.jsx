@@ -62,18 +62,23 @@ const ResultDisplay = ({
   console.log(studentClassRecord, "studentClassRecord")
 
   const calculatePerformance = (ca1, ca2, exam) => {
-    const total =
-      (parseFloat(ca1) || 0) + (parseFloat(ca2) || 0) + (parseFloat(exam) || 0);
-    if (total >= 70) return "A1";
-    if (total >= 65) return "B2";
-    if (total >= 60) return "B3";
-    if (total >= 57) return "C4";
-    if (total >= 54) return "C5";
-    if (total >= 50) return "C6";
-    if (total >= 45) return "D7";
-    if (total >= 40) return "E8";
-    return "F9";
-  };
+  const scores = [parseFloat(ca1), parseFloat(ca2), parseFloat(exam)].map((s) =>
+    isNaN(s) ? 0 : s
+  );
+
+  const average = scores.reduce((acc, s) => acc + s, 0) / scores.length;
+
+  if (average >= 70) return "A1";
+  if (average >= 65) return "B2";
+  if (average >= 60) return "B3";
+  if (average >= 57) return "C4";
+  if (average >= 54) return "C5";
+  if (average >= 50) return "C6";
+  if (average >= 45) return "D7";
+  if (average >= 40) return "E8";
+  return "F9";
+};
+
 
   console.log(databaseData.classRecord, "classRecord")
 

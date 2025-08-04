@@ -396,7 +396,7 @@ const TeacherResultActions = ({ students, sessions, subjects, teacherId, Results
                         <input
                           type="number"
                           min="0"
-                          max="100"
+                          // max="100"
                           className="w-16 border p-1"
                           onChange={(e) => handleInputChange(studentId, field, e.target.value)}
                         />
