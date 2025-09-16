@@ -46,8 +46,7 @@ const ResultDisplay = ({
     (t) => t.id === selectedTerm
   )?.name;
 
-
-  console.log(databaseData.classRecord, "hereeeeeeeeeeee")
+  console.log(databaseData.classRecord, "hereeeeeeeeeeee");
   // GET CLASSRECORD FOR POSITION,REMARK AND PROMOTION
   const studentClassRecord = useMemo(() => {
     return (
@@ -59,28 +58,56 @@ const ResultDisplay = ({
       ) || []
     );
   }, [databaseData.classRecord, studentInfo.id, selectedTerm, sessionId]);
-  console.log(studentClassRecord, "studentClassRecord")
+  console.log(studentClassRecord, "studentClassRecord");
 
-  const calculatePerformance = (ca1, ca2, exam) => {
-  const scores = [parseFloat(ca1), parseFloat(ca2), parseFloat(exam)].map((s) =>
-    isNaN(s) ? 0 : s
-  );
+  // --- Grade from total (1st & 2nd term)
+  const gradeFromTotal = (total) => {
+    if (total >= 70) return "A1";
+    if (total >= 65) return "B2";
+    if (total >= 60) return "B3";
+    if (total >= 57) return "C4";
+    if (total >= 54) return "C5";
+    if (total >= 50) return "C6";
+    if (total >= 45) return "D7";
+    if (total >= 40) return "E8";
+    return "F9";
+  };
 
-  const average = scores.reduce((acc, s) => acc + s, 0) / scores.length;
+  // --- Grade from average (3rd term)
+  const gradeFromAverage = (first, second, third) => {
+    const values = [first, second, third]
+      .map((v) => parseFloat(v))
+      .filter((v) => !isNaN(v) && v !== 0); // ignore 0 for absent term
 
-  if (average >= 70) return "A1";
-  if (average >= 65) return "B2";
-  if (average >= 60) return "B3";
-  if (average >= 57) return "C4";
-  if (average >= 54) return "C5";
-  if (average >= 50) return "C6";
-  if (average >= 45) return "D7";
-  if (average >= 40) return "E8";
-  return "F9";
-};
+    const divisor = values.length || 1;
+    const avg = values.reduce((a, b) => a + b, 0) / divisor;
 
+    if (avg >= 70) return "A1";
+    if (avg >= 65) return "B2";
+    if (avg >= 60) return "B3";
+    if (avg >= 57) return "C4";
+    if (avg >= 54) return "C5";
+    if (avg >= 50) return "C6";
+    if (avg >= 45) return "D7";
+    if (avg >= 40) return "E8";
+    return "F9";
+  };
 
-  console.log(databaseData.classRecord, "classRecord")
+  const calculatePerformance = (result, termName) => {
+    if (termName === "Third Term") {
+      // teacher enters totals for 1st, 2nd, 3rd term
+      return gradeFromAverage(
+        result.firstAssessment, // 1st term total
+        result.secondAssessment, // 2nd term total
+        result.examScore // 3rd term total
+      );
+    }
+
+    // for 1st & 2nd term → use total (CA1 + CA2 + Exam)
+    return gradeFromTotal(result.totalScore);
+  };
+
+  console.log(databaseData.classRecord, "classRecord");
 
   // GET TOTAL NUMBER IN CLASS PER TERM
   const totalStudentsInClass = useMemo(() => {
@@ -102,10 +129,41 @@ const ResultDisplay = ({
     return filteredResults.length * 100;
   }, [filteredResults]);
 
-  const studentPercentage =
-    maxTotalScore > 0
-      ? ((studentTotalScore / maxTotalScore) * 100).toFixed(2)
-      : 0;
+ const studentPercentage = useMemo(() => {
+  if (!filteredResults?.length) return 0;
+
+  let obtained = 0;
+  let subjects = 0;
+
+  filteredResults.forEach((res) => {
+    if (selectedTermName === "Third Term") {
+      // --- Average for 3rd term (ignore 0 values)
+      const values = [
+        parseFloat(res.firstAssessment),
+        parseFloat(res.secondAssessment),
+        parseFloat(res.examScore),
+      ].filter((v) => !isNaN(v) && v !== 0);
+
+      if (values.length) {
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        obtained += avg;      // avg is already out of 100
+        subjects++;
+      }
+    } else {
+      // --- 1st or 2nd term: use total score directly
+      const total = parseFloat(res.totalScore);
+      if (!isNaN(total)) {
+        obtained += total;
+        subjects++;
+      }
+    }
+  });
+
+  return subjects > 0
+    ? ((obtained / (subjects * 100)) * 100).toFixed(2)
+    : 0;
+}, [filteredResults, selectedTermName]);
+
 
   // CONFIRM PAYMENT HAS BEEN MADE  BEFORE DISPLAYING RESULT
   const isPaymentComplete = useMemo(() => {
@@ -118,7 +176,6 @@ const ResultDisplay = ({
         (payment.amount !== null || payment.amount === null)
     );
   }, [databaseData.paymentHistory, studentInfo.id, sessionId, selectedTerm]);
-
 
   return (
     <div className="p-3 relative">
@@ -194,10 +251,11 @@ const ResultDisplay = ({
                 <div>
                   <strong></strong>
                   {studentClassRecord?.map((record) => (
-                    <div key={record.id}>Times Present: {record.attendance}</div>
+                    <div key={record.id}>
+                      Times Present: {record.attendance}
+                    </div>
                   ))}
                 </div>
-
               </div>
             </div>
 
@@ -211,21 +269,28 @@ const ResultDisplay = ({
 
                       {selectedTermName === "Third Term" ? (
                         <>
-                          <th className="border border-black p-1">1st Term (100%)</th>
-                          <th className="border border-black p-1">2nd Term (100%)</th>
-                          <th className="border border-black p-1">3rd Term (100%)</th>
-                          <th className="border border-black p-1">Total score (300%)</th>
+                          <th className="border border-black p-1">
+                            1st Term (100%)
+                          </th>
+                          <th className="border border-black p-1">
+                            2nd Term (100%)
+                          </th>
+                          <th className="border border-black p-1">
+                            3rd Term (100%)
+                          </th>
+                          <th className="border border-black p-1">
+                            Total score (300%)
+                          </th>
                         </>
                       ) : (
                         <>
                           <th className="border border-black p-1">CA1</th>
                           <th className="border border-black p-1">CA2</th>
                           <th className="border border-black p-1">Exam</th>
-                           <th className="border border-black p-1">Total</th>
+                          <th className="border border-black p-1">Total</th>
                         </>
                       )}
 
-                     
                       <th className="border border-black p-1">Avg score</th>
                       <th className="border border-black p-1">Performance</th>
                       <th className="border border-black p-1">Position</th>
@@ -247,19 +312,23 @@ const ResultDisplay = ({
                             {result.secondAssessment}
                           </td>
                           <td className="border p-1">{result.examScore}</td>
+                          <td className="border p-1">{result.totalScore}</td>
                           <td className="border p-1">
-                            {result.totalScore}
+                            {(() => {
+                              const values = [
+                                parseFloat(result.firstAssessment),
+                                parseFloat(result.secondAssessment),
+                                parseFloat(result.examScore),
+                              ].filter((v) => !isNaN(v) && v !== 0); // ignore 0 completely
+                              const divisor = values.length || 1;
+                              return (result.totalScore / divisor).toFixed(2);
+                            })()}
                           </td>
-                          <td className="border p-1">
-                            {(result.totalScore / 3).toFixed(2)}
-                          </td>
+
                           <td className="border p-1 font-semibold">
-                            {calculatePerformance(
-                              result.firstAssessment,
-                              result.secondAssessment,
-                              result.examScore
-                            )}
+                            {calculatePerformance(result, selectedTermName)}
                           </td>
+
                           <td className="border p-1 font-bold">
                             {result.subPosition}
                           </td>
@@ -273,7 +342,10 @@ const ResultDisplay = ({
                 <table className="w-full border-collapse border border-gray-300 text-xs bg-white mt-2">
                   <thead>
                     <tr>
-                      <th colSpan={2} className="border p-2 text-center bg-gray-100">
+                      <th
+                        colSpan={2}
+                        className="border p-2 text-center bg-gray-100"
+                      >
                         AFFECTIVE AND PSYCHOMOTOR (BEHAVIOUR AND SKILL)
                       </th>
                     </tr>
@@ -285,18 +357,20 @@ const ResultDisplay = ({
                   <tbody>
                     {studentClassRecord?.map((record, index) => {
                       const skills = record.skills || {};
-                      return Object.entries(skills).map(([skillName, grade]) => (
-                        <tr key={`${index}-${skillName}`}>
-                          <td className="border p-2 text-left capitalize">{skillName}</td>
-                          <td className="border p-2 text-center">{grade}</td>
-                        </tr>
-                      ));
+                      return Object.entries(skills).map(
+                        ([skillName, grade]) => (
+                          <tr key={`${index}-${skillName}`}>
+                            <td className="border p-2 text-left capitalize">
+                              {skillName}
+                            </td>
+                            <td className="border p-2 text-center">{grade}</td>
+                          </tr>
+                        )
+                      );
                     })}
                   </tbody>
                 </table>
               </div>
-
-
             </div>
 
             <div>
@@ -338,20 +412,28 @@ const ResultDisplay = ({
                     </thead>
                     <tbody>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">5 – Excellent display of behaviors/skills</td>
+                        <td className="border p-1 text-left">
+                          5 – Excellent display of behaviors/skills
+                        </td>
                       </tr>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">4 – Very good display of behaviors/skills</td>
+                        <td className="border p-1 text-left">
+                          4 – Very good display of behaviors/skills
+                        </td>
                       </tr>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">3 – Satisfactory display of behaviors/skill</td>
+                        <td className="border p-1 text-left">
+                          3 – Satisfactory display of behaviors/skill
+                        </td>
                       </tr>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">2 – Limited display of behaviors/skill</td>
+                        <td className="border p-1 text-left">
+                          2 – Limited display of behaviors/skill
+                        </td>
                       </tr>
                       <tr className="border-t">
-                        <td className="border p-1 text-left">1 – No display of behaviors/skills
-
+                        <td className="border p-1 text-left">
+                          1 – No display of behaviors/skills
                         </td>
                       </tr>
                     </tbody>
@@ -394,12 +476,16 @@ const ResultDisplay = ({
               <p>"We Offer Excellence in Education"</p>
 
               <div className="flex flex-col items-center mt-2">
-                <Image src="/principalsign.png" alt="Principal Signature" width={80} height={40} />
+                <Image
+                  src="/principalsign.png"
+                  alt="Principal Signature"
+                  width={80}
+                  height={40}
+                />
                 <div className="w-40 border-b-2 border-black -mt-1"></div>
                 <p className="mt-1">Signed:(Principal)</p>
               </div>
             </div>
-
           </div>
           {/* PRINT BUTTON */}
           <div className="text-center mt-3">

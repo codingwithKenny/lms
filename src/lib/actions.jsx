@@ -709,13 +709,13 @@ export async function createSession(sessionName) {
               termId: lastActiveTerm.id,
             },
           });
-        
+
           if (!existingHistory) {
             const allStudents = await prisma.student.findMany({
               where: { sessionId: lastSession.id, isDeleted: false },
               select: { id: true, paymentStatus: true },
             });
-        
+
             if (allStudents.length > 0) {
               const paymentHistoryRecords = allStudents.map((student) => ({
                 studentId: student.id,
@@ -723,18 +723,17 @@ export async function createSession(sessionName) {
                 termId: lastActiveTerm.id,
                 status: student.paymentStatus,
               }));
-        
+
               await prisma.paymentHistory.createMany({
                 data: paymentHistoryRecords,
               });
-        
+
               console.log("✅ Payment history saved for Third Term.");
             }
           } else {
             console.log("⚠️ Payment history already exists — skipping save.");
           }
         }
-        
       }
 
       // ✅ Deactivate last session and all its terms
@@ -1122,9 +1121,12 @@ export const createResult = async (results) => {
         if (
           !result.studentId ||
           !result.teacherId ||
-          !result.firstAssessment ||
-          !result.secondAssessment ||
-          !result.examScore ||
+          result.firstAssessment === null ||
+          result.firstAssessment === undefined ||
+          result.secondAssessment === null ||
+          result.secondAssessment === undefined ||
+          result.examScore === null ||
+          result.examScore === undefined ||
           !result.subPosition
         ) {
           return null;
@@ -1150,8 +1152,7 @@ export const createResult = async (results) => {
       })
       .filter(Boolean);
 
-    console.log(validResults, "hereeeeeeeeeeee")
-
+    console.log(validResults, "hereeeeeeeeeeee");
 
     if (validResults.length === 0) {
       return {
@@ -1159,7 +1160,7 @@ export const createResult = async (results) => {
         error: "❌ Some results are invalid. Fix them before submission.",
       };
     }
-    console.log("ready to create")
+    console.log("ready to create");
     // ✅ Insert results
     await prisma.result.createMany({ data: validResults });
     console.log("�� Results created successfully");
@@ -1248,7 +1249,7 @@ export const createClassRecord = async (records) => {
           position: parseInt(record.position, 10) || null,
           promotion,
           preferredClass, // ✅ Automatically included if available, else null
-          skills: record.skills || {},           // ✅ Now included
+          skills: record.skills || {}, // ✅ Now included
           attendance: record.attendance || 0,
         };
       })
@@ -1362,7 +1363,7 @@ export const createAdmin = async (data) => {
   }
 };
 
-export default async () => { };
+export default async () => {};
 
 export async function updateTermStatus(termId, sessionId) {
   console.log("🔄 Updating term status", { termId, sessionId });
@@ -1528,8 +1529,11 @@ export const updatePaymentHistory = async ({
   }
 };
 
-
-export const saveResumptionDate = async ({ sessionId, termId, resumptionDate }) => {
+export const saveResumptionDate = async ({
+  sessionId,
+  termId,
+  resumptionDate,
+}) => {
   try {
     console.log("Sending to saveResumptionDate:", {
       sessionId,
@@ -1571,9 +1575,11 @@ export const saveResumptionDate = async ({ sessionId, termId, resumptionDate }) 
   }
 };
 
-
-
-export const updateResumptionDate = async ({ sessionId, termId, resumptionDate }) => {
+export const updateResumptionDate = async ({
+  sessionId,
+  termId,
+  resumptionDate,
+}) => {
   try {
     if (!sessionId || !termId || !resumptionDate) {
       return { success: false, message: "Missing required parameters" };
@@ -1596,4 +1602,3 @@ export const updateResumptionDate = async ({ sessionId, termId, resumptionDate }
     return { success: false, message: error.message };
   }
 };
-

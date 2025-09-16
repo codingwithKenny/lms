@@ -31,7 +31,7 @@ const studentListPage = async({ searchParams}) => {
               break;
               case 'search':
                 query.OR = [
-                    { name: { contains: value, mode: "insensitive" } }, // Search by student name
+                    { firstname: { contains: value, mode: "insensitive" } }, // Search by student name
                     { class: { name: { contains: value, mode: "insensitive" } } }, // Search by class name
                 ];
                 break;
@@ -92,7 +92,7 @@ const studentListPage = async({ searchParams}) => {
    
  const column = [
   { header: 'Info', accessor: 'info' },
-  { header: 'Adnission No', accessor: 'studentId', className: 'hidden md:table-cell' },
+  { header: 'Admission No', accessor: 'studentId', className: 'hidden md:table-cell' },
   { header: 'Grade', accessor: 'grade', className: 'hidden md:table-cell' },
   { header: 'Phone', accessor: 'phone', className: 'hidden lg:table-cell' },
   { header: 'Address', accessor: 'address', className: 'hidden lg:table-cell' },

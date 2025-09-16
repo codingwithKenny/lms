@@ -9,6 +9,8 @@ const EditUnpaidStudent = () => {
   const [selectedSession, setSelectedSession] = useState(null);
   const [selectedTerm, setSelectedTerm] = useState(null);
   const [students, setStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+
 
   // Filter sessions where isCurrent is false
   const allSessions = databaseData.sessions;
@@ -131,46 +133,64 @@ const EditUnpaidStudent = () => {
       )}
 
       {/* Student Table */}
-      {selectedTerm && students.length > 0 && (
-        <div className="bg-white shadow-md rounded-lg p-6 mt-6">
-          <h3 className="text-lg font-semibold mb-4">Student Payment Status</h3>
-          <table className="w-full border-collapse border border-gray-300">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2">Student Name</th>
-                <th className="border p-2">Payment Status</th>
-                <th className="border p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr key={student.id} className="text-center">
-                  <td className="border p-2">{student.name}</td>
-                  <td className="border p-2">
-                    <select
-                      className="p-1 border rounded"
-                      value={student.status}
-                      onChange={(e) => handleStatusChange(student.id, e.target.value)}
-                    >
-                      <option value="PAID">PAID</option>
-                      <option value="NOT_PAID">UNPAID</option>
-                      <option value="PARTIALLY_PAID">PARTIALLY PAID</option>
-                    </select>
-                  </td>
-                  <td className="border p-2">
-                    <button
-                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
-                      onClick={() => updatePaymentStatus(student.id, student.status)}
-                    >
-                      Save
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+     {selectedTerm && students.length > 0 && (
+  <div className="bg-white shadow-md rounded-lg p-6 mt-6">
+    <h3 className="text-lg font-semibold mb-4">Student Payment Status</h3>
+
+    <input
+      type="text"
+      placeholder="Search by name or class..."
+      className="mb-4 w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+      value={searchTerm}
+      onChange={(e) => setSearchTerm(e.target.value)}
+    />
+
+    <table className="w-full border-collapse border border-gray-300">
+      <thead>
+        <tr className="bg-gray-100">
+          <th className="border p-2">Student Name</th>
+          <th className="border p-2">Payment Status</th>
+          <th className="border p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {students
+          .filter((student) => {
+            const term = searchTerm.toLowerCase();
+            return (
+              student.name.toLowerCase().includes(term) ||
+              (student.className?.toLowerCase() ?? "").includes(term)
+            );
+          })
+          .map((student) => (
+            <tr key={student.id} className="text-center">
+              <td className="border p-2">{student.name}</td>
+              <td className="border p-2">
+                <select
+                  className="p-1 border rounded"
+                  value={student.status}
+                  onChange={(e) => handleStatusChange(student.id, e.target.value)}
+                >
+                  <option value="PAID">PAID</option>
+                  <option value="NOT_PAID">UNPAID</option>
+                  <option value="PARTIALLY_PAID">PARTIALLY PAID</option>
+                </select>
+              </td>
+              <td className="border p-2">
+                <button
+                  className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                  onClick={() => updatePaymentStatus(student.id, student.status)}
+                >
+                  Save
+                </button>
+              </td>
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
 
       {selectedTerm && students.length === 0 && (
         <p className="text-gray-500 text-sm mt-4">No students found for this term.</p>
