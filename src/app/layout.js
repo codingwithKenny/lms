@@ -1,6 +1,6 @@
 import 'react-calendar/dist/Calendar.css';
 import './globals.css';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+// import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { ClerkProvider } from '@clerk/nextjs';
 import { DatabaseProvider } from './context/DatabaseProvider';
 import { Toaster } from '@/components/ui/toaster';
